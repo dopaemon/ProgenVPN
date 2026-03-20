@@ -1,151 +1,271 @@
 {% extends "base.html" %}
 {% block title %}Proxy Builder{% endblock %}
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/proxy-builder.css') }}">
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+<div class="container-fluid proxy-builder-page">
+  <div class="d-sm-flex align-items-center justify-content-between mb-4 proxy-page-header">
     <div>
-      <h1 class="h3 mb-0 text-gray-800">Xray Personal Proxy</h1>
-      <p class="mb-0 text-gray-600">Sinh nhieu node VPN, tao UUID, QR va share link ngay tren mot trang.</p>
+      <h1 class="h3 mb-1 text-gray-800">Xray Personal Proxy</h1>
+      <p class="mb-0 text-gray-600">Create multiple nodes quickly, keep the page compact, and copy links or payloads without reloading.</p>
     </div>
+    <div class="small text-gray-500 mt-3 mt-sm-0">Compact by default. Expand only what you need.</div>
   </div>
 
   <div id="proxyAlert" class="alert d-none" role="alert"></div>
 
+  <div class="row proxy-summary-row">
+    <div class="col-xl-4 col-md-4 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2 proxy-summary-card">
+        <div class="card-body">
+          <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Nodes</div>
+          <div class="h5 mb-0 font-weight-bold text-gray-800" id="nodeCountStat">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4 col-md-4 mb-4">
+      <div class="card border-left-success shadow h-100 py-2 proxy-summary-card">
+        <div class="card-body">
+          <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Generated Nodes</div>
+          <div class="h5 mb-0 font-weight-bold text-gray-800" id="generatedCountStat">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4 col-md-4 mb-4">
+      <div class="card border-left-info shadow h-100 py-2 proxy-summary-card">
+        <div class="card-body">
+          <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Selected Protocol</div>
+          <div class="h5 mb-0 font-weight-bold text-gray-800" id="selectedProtocolStat">{{ form_data.protocol | upper }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row">
     <div class="col-xl-7 col-lg-7">
       <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-          <h6 class="m-0 font-weight-bold text-primary">Cau hinh chung</h6>
-          <button type="button" id="addNodeButton" class="btn btn-sm btn-outline-primary">Them node</button>
-        </div>
-        <div class="card-body">
-          <form id="proxyForm">
-            <div class="form-row">
-              <div class="form-group col-md-4">
-                <label for="protocol">Protocol</label>
-                <select class="form-control" id="protocol" name="protocol">
-                  <option value="vmess" {% if form_data.protocol == 'vmess' %}selected{% endif %}>VMess</option>
-                  <option value="vless" {% if form_data.protocol == 'vless' %}selected{% endif %}>VLESS</option>
-                </select>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="network">Network</label>
-                <select class="form-control" id="network" name="network">
-                  <option value="ws" {% if form_data.network == 'ws' %}selected{% endif %}>WebSocket</option>
-                  <option value="tcp" {% if form_data.network == 'tcp' %}selected{% endif %}>TCP</option>
-                  <option value="grpc" {% if form_data.network == 'grpc' %}selected{% endif %}>gRPC</option>
-                </select>
-              </div>
-              <div class="form-group col-md-4">
-                <label for="security">Security</label>
-                <select class="form-control" id="security" name="security">
-                  <option value="tls" {% if form_data.security == 'tls' %}selected{% endif %}>TLS</option>
-                  <option value="none" {% if form_data.security == 'none' %}selected{% endif %}>None</option>
-                  <option value="reality" {% if form_data.security == 'reality' %}selected{% endif %}>REALITY</option>
-                </select>
-              </div>
+        <a href="#proxyConfigCollapse" class="d-block card-header py-3" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="proxyConfigCollapse">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <h6 class="m-0 font-weight-bold text-primary">Connection Settings</h6>
+              <div class="small text-gray-500">Server, transport, and stream options</div>
             </div>
+            <span class="badge badge-light">Collapsed</span>
+          </div>
+        </a>
+        <div class="collapse" id="proxyConfigCollapse">
+          <div class="card-body">
+            <form id="proxyForm" data-default-nodes='{{ form_data.nodes | tojson }}'>
+              <div class="form-row">
+                <div class="form-group col-md-4">
+                  <label for="protocol">Protocol</label>
+                  <select class="form-control" id="protocol" name="protocol">
+                    <option value="vmess" {% if form_data.protocol == 'vmess' %}selected{% endif %}>VMess</option>
+                    <option value="vless" {% if form_data.protocol == 'vless' %}selected{% endif %}>VLESS</option>
+                  </select>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="network">Transport</label>
+                  <select class="form-control" id="network" name="network">
+                    <option value="ws" {% if form_data.network == 'ws' %}selected{% endif %}>WebSocket</option>
+                    <option value="tcp" {% if form_data.network == 'tcp' %}selected{% endif %}>TCP</option>
+                    <option value="grpc" {% if form_data.network == 'grpc' %}selected{% endif %}>gRPC</option>
+                  </select>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="security">Security</label>
+                  <select class="form-control" id="security" name="security">
+                    <option value="tls" {% if form_data.security == 'tls' %}selected{% endif %}>TLS</option>
+                    <option value="none" {% if form_data.security == 'none' %}selected{% endif %}>None</option>
+                    <option value="reality" {% if form_data.security == 'reality' %}selected{% endif %}>REALITY</option>
+                  </select>
+                </div>
+              </div>
 
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="address">Server Address</label>
-                <input class="form-control" id="address" name="address" value="{{ form_data.address }}" required>
+              <div class="form-row">
+                <div class="form-group col-md-6">
+                  <label for="address">Server Address</label>
+                  <input class="form-control" id="address" name="address" value="{{ form_data.address }}" required>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="host">Host</label>
+                  <input class="form-control" id="host" name="host" value="{{ form_data.host }}">
+                </div>
               </div>
-              <div class="form-group col-md-6">
-                <label for="host">Host</label>
-                <input class="form-control" id="host" name="host" value="{{ form_data.host }}">
-              </div>
-            </div>
 
-            <div class="form-row">
-              <div class="form-group col-md-4">
-                <label for="path">Path / Service Name</label>
-                <input class="form-control" id="path" name="path" value="{{ form_data.path }}">
+              <div class="form-row">
+                <div class="form-group col-md-4">
+                  <label for="path">Path / Service Name</label>
+                  <input class="form-control" id="path" name="path" value="{{ form_data.path }}">
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="sni">SNI</label>
+                  <input class="form-control" id="sni" name="sni" value="{{ form_data.sni }}">
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="fingerprint">Fingerprint</label>
+                  <input class="form-control" id="fingerprint" name="fingerprint" value="{{ form_data.fingerprint }}">
+                </div>
               </div>
-              <div class="form-group col-md-4">
-                <label for="sni">SNI</label>
-                <input class="form-control" id="sni" name="sni" value="{{ form_data.sni }}">
-              </div>
-              <div class="form-group col-md-4">
-                <label for="fingerprint">Fingerprint</label>
-                <input class="form-control" id="fingerprint" name="fingerprint" value="{{ form_data.fingerprint }}">
-              </div>
-            </div>
 
-            <div class="form-row">
-              <div class="form-group col-md-4">
-                <label for="alpn">ALPN</label>
-                <input class="form-control" id="alpn" name="alpn" value="{{ form_data.alpn }}">
+              <div class="form-row">
+                <div class="form-group col-md-4">
+                  <label for="alpn">ALPN</label>
+                  <input class="form-control" id="alpn" name="alpn" value="{{ form_data.alpn }}">
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="flow">Flow</label>
+                  <input class="form-control" id="flow" name="flow" value="{{ form_data.flow }}">
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="header_type">Header Type</label>
+                  <input class="form-control" id="header_type" name="header_type" value="{{ form_data.header_type }}">
+                </div>
               </div>
-              <div class="form-group col-md-4">
-                <label for="flow">Flow</label>
-                <input class="form-control" id="flow" name="flow" value="{{ form_data.flow }}">
-              </div>
-              <div class="form-group col-md-4">
-                <label for="header_type">Header Type</label>
-                <input class="form-control" id="header_type" name="header_type" value="{{ form_data.header_type }}">
-              </div>
-            </div>
 
-            <hr>
-            <div class="d-flex flex-row align-items-center justify-content-between mb-3">
-              <h6 class="m-0 font-weight-bold text-primary">Danh sach node</h6>
-              <button type="button" id="bulkUuidButton" class="btn btn-sm btn-outline-secondary">Tao UUID cho node rong</button>
-            </div>
-            <div id="nodeList"></div>
+              <hr>
+              <div class="card border-left-primary shadow-sm mb-3">
+                <a href="#proxyNodesCollapse" class="d-block card-header py-3" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="proxyNodesCollapse">
+                  <div class="d-flex flex-row align-items-center justify-content-between">
+                    <div>
+                      <h6 class="m-0 font-weight-bold text-primary">Node List</h6>
+                      <div class="small text-gray-500">Each node keeps its own port and UUID</div>
+                    </div>
+                    <span class="badge badge-light">Collapsed</span>
+                  </div>
+                </a>
+                <div class="collapse" id="proxyNodesCollapse">
+                  <div class="card-body">
+                    <div class="proxy-node-toolbar d-flex flex-row align-items-center justify-content-between mb-3">
+                      <div class="btn-group btn-group-sm">
+                        <button type="button" id="addNodeButton" class="btn btn-outline-primary">Add Node</button>
+                        <button type="button" id="bulkUuidButton" class="btn btn-outline-secondary">Fill Empty UUIDs</button>
+                      </div>
+                      <div class="small text-gray-500" id="nodeToolbarHint">Add multiple nodes to generate several ports in one run.</div>
+                    </div>
+                    <div id="nodeList"></div>
+                  </div>
+                </div>
+              </div>
 
-            <button type="submit" id="buildButton" class="btn btn-primary mt-3">
-              Tao proxy
-            </button>
-          </form>
+              <div class="proxy-actions d-flex align-items-center justify-content-between mt-3">
+                <div class="small text-gray-500">Build the proxy set to refresh the results panel on the right.</div>
+                <button type="submit" id="buildButton" class="btn btn-primary">Build Proxy</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="col-xl-5 col-lg-5">
-      <div class="card shadow mb-4">
+      <div class="card shadow mb-4 proxy-results-card">
         <div class="card-header py-3">
-          <h6 class="m-0 font-weight-bold text-primary">Ket qua</h6>
+          <div class="d-flex align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Results</h6>
+            <span class="badge badge-light" id="resultCountBadge">0 nodes</span>
+          </div>
         </div>
-        <div class="card-body" id="resultsPanel">
-          <p class="text-gray-600 mb-0">Nhan "Tao proxy" de sinh QR va link cho tung node.</p>
+        <div class="card-body">
+          <div class="proxy-results-meta small text-gray-600 mb-3" id="resultsMeta">
+            No results yet. Build at least one node to generate QR codes and import links.
+          </div>
+          <div id="resultsPanel" class="proxy-results-list">
+            <div class="proxy-empty-state text-center">
+              <div class="proxy-empty-title">Ready to build</div>
+              <div class="proxy-empty-copy text-gray-500">Results will be grouped by node, and each card can be expanded only when needed.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<template id="nodeTemplate">
+<template id="proxyNodeTemplate">
   <div class="card border-left-primary shadow-sm mb-3 node-item">
-    <div class="card-body">
-      <div class="d-flex flex-row align-items-center justify-content-between mb-3">
-        <h6 class="m-0 font-weight-bold text-gray-800 node-title">Node</h6>
-        <button type="button" class="btn btn-sm btn-outline-danger remove-node">Xoa</button>
+    <a href="#" class="d-block card-header py-3 node-toggle" data-toggle="collapse" role="button" aria-expanded="false">
+      <div class="d-flex flex-row align-items-center justify-content-between">
+        <div>
+          <h6 class="m-0 font-weight-bold text-primary node-title">Node</h6>
+          <div class="small text-gray-500 node-subtitle">Port and UUID summary</div>
+        </div>
+        <span class="badge badge-light node-badge">Editing</span>
       </div>
+    </a>
+    <div class="collapse node-collapse">
+      <div class="card-body">
+        <div class="d-flex flex-row align-items-center justify-content-between mb-3">
+          <div class="small text-gray-600">Per-node port and UUID settings</div>
+          <button type="button" class="btn btn-sm btn-outline-danger remove-node">Remove</button>
+        </div>
 
-      <div class="form-row">
-        <div class="form-group col-md-5">
-          <label>Remark</label>
-          <input class="form-control node-remark" value="Node">
+        <div class="form-row">
+          <div class="form-group col-md-5">
+            <label>Remark</label>
+            <input class="form-control node-remark" value="Node">
+          </div>
+          <div class="form-group col-md-3">
+            <label>Port</label>
+            <input type="number" min="1" max="65535" class="form-control node-port" value="443">
+          </div>
+          <div class="form-group col-md-4">
+            <label>Alter ID</label>
+            <input type="number" min="0" class="form-control node-alter-id" value="0">
+          </div>
         </div>
-        <div class="form-group col-md-3">
-          <label>Port</label>
-          <input type="number" min="1" max="65535" class="form-control node-port" value="443">
-        </div>
-        <div class="form-group col-md-4">
-          <label>Alter ID</label>
-          <input type="number" min="0" class="form-control node-alter-id" value="0">
+
+        <div class="form-row align-items-end">
+          <div class="form-group col-md-9 mb-md-0">
+            <label>UUID</label>
+            <input class="form-control node-uuid" value="">
+          </div>
+          <div class="form-group col-md-3 mb-0">
+            <button type="button" class="btn btn-outline-primary btn-block generate-uuid">Generate</button>
+          </div>
         </div>
       </div>
+    </div>
+  </div>
+</template>
 
-      <div class="form-row align-items-end">
-        <div class="form-group col-md-9 mb-md-0">
-          <label>UUID</label>
-          <input class="form-control node-uuid" value="">
+<template id="proxyResultTemplate">
+  <div class="card shadow-sm mb-3 result-item">
+    <a href="#" class="d-block card-header py-3 result-toggle" data-toggle="collapse" role="button" aria-expanded="false">
+      <div class="d-flex flex-row align-items-center justify-content-between">
+        <div>
+          <h6 class="m-0 font-weight-bold text-primary result-remark">Node</h6>
+          <div class="small text-gray-600 result-port-text">Port 0</div>
         </div>
-        <div class="form-group col-md-3 mb-0">
-          <button type="button" class="btn btn-outline-primary btn-block generate-uuid">UUID</button>
+        <span class="badge badge-light result-status">Ready</span>
+      </div>
+    </a>
+    <div class="collapse result-collapse">
+      <div class="card-body">
+        <div class="d-flex flex-row align-items-center justify-content-between mb-3">
+          <div class="small text-gray-600">QR code and import values for this node</div>
+          <img src="" alt="" class="border rounded bg-white p-2 result-qr" style="width: 120px; height: 120px; object-fit: contain;">
+        </div>
+        <div class="form-group">
+          <label class="font-weight-bold">UUID</label>
+          <input class="form-control result-uuid" readonly>
+        </div>
+        <div class="form-group">
+          <label class="font-weight-bold">Share Link</label>
+          <textarea class="form-control result-link" rows="4" readonly></textarea>
+          <div class="proxy-copy-actions mt-2 d-flex justify-content-end">
+            <button type="button" class="btn btn-sm btn-outline-primary copy-link-button">Copy Link</button>
+          </div>
+        </div>
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">JSON Payload</label>
+          <textarea class="form-control result-payload" rows="12" readonly></textarea>
+          <div class="proxy-copy-actions mt-2 d-flex justify-content-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary copy-payload-button">Copy JSON</button>
+          </div>
         </div>
       </div>
     </div>
@@ -155,182 +275,5 @@
 
 {% block js %}
 {{ super() }}
-<script>
-  const defaultNodes = {{ form_data.nodes | tojson }};
-  const nodeList = document.getElementById('nodeList');
-  const nodeTemplate = document.getElementById('nodeTemplate');
-  const alertBox = document.getElementById('proxyAlert');
-  const resultsPanel = document.getElementById('resultsPanel');
-  const buildButton = document.getElementById('buildButton');
-
-  function showAlert(message, type) {
-    alertBox.className = `alert alert-${type}`;
-    alertBox.textContent = message;
-    alertBox.classList.remove('d-none');
-  }
-
-  function hideAlert() {
-    alertBox.classList.add('d-none');
-  }
-
-  async function fetchUuid() {
-    const response = await fetch('/api/proxy/uuid');
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || 'Khong tao duoc UUID.');
-    }
-    return payload.uuid;
-  }
-
-  function updateNodeTitles() {
-    document.querySelectorAll('.node-item').forEach((item, index) => {
-      const title = item.querySelector('.node-title');
-      const remarkInput = item.querySelector('.node-remark');
-      title.textContent = `Node ${index + 1}`;
-      if (!remarkInput.value.trim() || /^Node \d+$/.test(remarkInput.value.trim())) {
-        remarkInput.value = `Node ${index + 1}`;
-      }
-    });
-  }
-
-  function createNodeCard(node = {}) {
-    const fragment = nodeTemplate.content.cloneNode(true);
-    const element = fragment.querySelector('.node-item');
-    element.querySelector('.node-remark').value = node.remark || '';
-    element.querySelector('.node-port').value = node.port || 443;
-    element.querySelector('.node-alter-id').value = node.alter_id ?? 0;
-    element.querySelector('.node-uuid').value = node.uuid || '';
-
-    element.querySelector('.remove-node').addEventListener('click', () => {
-      if (document.querySelectorAll('.node-item').length === 1) {
-        showAlert('Can giu it nhat mot node.', 'warning');
-        return;
-      }
-      element.remove();
-      updateNodeTitles();
-    });
-
-    element.querySelector('.generate-uuid').addEventListener('click', async () => {
-      const uuidInput = element.querySelector('.node-uuid');
-      try {
-        hideAlert();
-        uuidInput.value = 'Dang tao...';
-        uuidInput.value = await fetchUuid();
-      } catch (error) {
-        uuidInput.value = '';
-        showAlert(error.message, 'danger');
-      }
-    });
-
-    nodeList.appendChild(fragment);
-    updateNodeTitles();
-  }
-
-  function collectPayload() {
-    return {
-      protocol: document.getElementById('protocol').value,
-      address: document.getElementById('address').value.trim(),
-      network: document.getElementById('network').value,
-      security: document.getElementById('security').value,
-      host: document.getElementById('host').value.trim(),
-      path: document.getElementById('path').value.trim(),
-      sni: document.getElementById('sni').value.trim(),
-      fingerprint: document.getElementById('fingerprint').value.trim(),
-      alpn: document.getElementById('alpn').value.trim(),
-      flow: document.getElementById('flow').value.trim(),
-      header_type: document.getElementById('header_type').value.trim(),
-      nodes: Array.from(document.querySelectorAll('.node-item')).map((item) => ({
-        remark: item.querySelector('.node-remark').value.trim(),
-        port: item.querySelector('.node-port').value.trim(),
-        uuid: item.querySelector('.node-uuid').value.trim(),
-        alter_id: item.querySelector('.node-alter-id').value.trim(),
-      })),
-    };
-  }
-
-  function renderResults(payload) {
-    if (!payload.results || !payload.results.length) {
-      resultsPanel.innerHTML = '<p class="text-gray-600 mb-0">Khong co ket qua.</p>';
-      return;
-    }
-
-    resultsPanel.innerHTML = payload.results.map((item) => `
-      <div class="border rounded p-3 mb-3">
-        <div class="d-flex flex-row align-items-center justify-content-between mb-3">
-          <div>
-            <h6 class="font-weight-bold text-primary mb-1">${item.remark}</h6>
-            <div class="small text-gray-600">Port ${item.port}</div>
-          </div>
-          <img src="${item.qr_code_data_uri}" alt="QR ${item.remark}" class="border rounded bg-white p-2" style="width: 120px; height: 120px; object-fit: contain;">
-        </div>
-        <div class="form-group">
-          <label class="font-weight-bold">UUID</label>
-          <input class="form-control" readonly value="${item.uuid}">
-        </div>
-        <div class="form-group">
-          <label class="font-weight-bold">Share Link</label>
-          <textarea class="form-control" rows="4" readonly>${item.share_link}</textarea>
-        </div>
-        <div class="form-group mb-0">
-          <label class="font-weight-bold">JSON Payload</label>
-          <textarea class="form-control" rows="12" readonly>${item.payload_json}</textarea>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  document.getElementById('addNodeButton').addEventListener('click', async () => {
-    createNodeCard({ port: 443, alter_id: 0 });
-  });
-
-  document.getElementById('bulkUuidButton').addEventListener('click', async () => {
-    const emptyUuidInputs = Array.from(document.querySelectorAll('.node-uuid')).filter((input) => !input.value.trim());
-    if (!emptyUuidInputs.length) {
-      showAlert('Tat ca node da co UUID.', 'info');
-      return;
-    }
-
-    hideAlert();
-    for (const input of emptyUuidInputs) {
-      try {
-        input.value = 'Dang tao...';
-        input.value = await fetchUuid();
-      } catch (error) {
-        input.value = '';
-        showAlert(error.message, 'danger');
-        break;
-      }
-    }
-  });
-
-  document.getElementById('proxyForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    hideAlert();
-    buildButton.disabled = true;
-    buildButton.textContent = 'Dang tao...';
-
-    try {
-      const response = await fetch('/api/proxy/build', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(collectPayload()),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || 'Khong tao duoc proxy.');
-      }
-      renderResults(payload);
-      showAlert(`Da tao ${payload.node_count} node ${payload.protocol.toUpperCase()}.`, 'success');
-    } catch (error) {
-      showAlert(error.message, 'danger');
-    } finally {
-      buildButton.disabled = false;
-      buildButton.textContent = 'Tao proxy';
-    }
-  });
-
-  defaultNodes.forEach((node) => createNodeCard(node));
-</script>
+<script src="{{ url_for('static', filename='js/proxy-builder.js') }}"></script>
 {% endblock %}
