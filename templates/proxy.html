@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Proxy Builder{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="h3 mb-0 text-gray-800">Xray Personal Proxy</h1>
+      <p class="mb-0 text-gray-600">Tao link share chuan VMess hoac VLESS va QR de import nhanh vao client.</p>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-danger" role="alert">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <div class="row">
+    <div class="col-xl-7 col-lg-7">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Thong so ket noi</h6>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label for="protocol">Protocol</label>
+                <select class="form-control" id="protocol" name="protocol">
+                  <option value="vmess" {% if form_data.protocol == 'vmess' %}selected{% endif %}>VMess</option>
+                  <option value="vless" {% if form_data.protocol == 'vless' %}selected{% endif %}>VLESS</option>
+                </select>
+              </div>
+              <div class="form-group col-md-4">
+                <label for="network">Network</label>
+                <select class="form-control" id="network" name="network">
+                  <option value="ws" {% if form_data.network == 'ws' %}selected{% endif %}>WebSocket</option>
+                  <option value="tcp" {% if form_data.network == 'tcp' %}selected{% endif %}>TCP</option>
+                  <option value="grpc" {% if form_data.network == 'grpc' %}selected{% endif %}>gRPC</option>
+                </select>
+              </div>
+              <div class="form-group col-md-4">
+                <label for="security">Security</label>
+                <select class="form-control" id="security" name="security">
+                  <option value="tls" {% if form_data.security == 'tls' %}selected{% endif %}>TLS</option>
+                  <option value="none" {% if form_data.security == 'none' %}selected{% endif %}>None</option>
+                  <option value="reality" {% if form_data.security == 'reality' %}selected{% endif %}>REALITY</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="remark">Remark</label>
+                <input class="form-control" id="remark" name="remark" value="{{ form_data.remark }}" required>
+              </div>
+              <div class="form-group col-md-6">
+                <label for="address">Server Address</label>
+                <input class="form-control" id="address" name="address" value="{{ form_data.address }}" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label for="port">Port</label>
+                <input class="form-control" id="port" name="port" type="number" min="1" max="65535" value="{{ form_data.port }}" required>
+              </div>
+              <div class="form-group col-md-8">
+                <label for="uuid">UUID</label>
+                <input class="form-control" id="uuid" name="uuid" value="{{ form_data.uuid }}" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="host">Host</label>
+                <input class="form-control" id="host" name="host" value="{{ form_data.host }}">
+              </div>
+              <div class="form-group col-md-6">
+                <label for="path">Path / Service Name</label>
+                <input class="form-control" id="path" name="path" value="{{ form_data.path }}">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label for="sni">SNI</label>
+                <input class="form-control" id="sni" name="sni" value="{{ form_data.sni }}">
+              </div>
+              <div class="form-group col-md-4">
+                <label for="fingerprint">Fingerprint</label>
+                <input class="form-control" id="fingerprint" name="fingerprint" value="{{ form_data.fingerprint }}">
+              </div>
+              <div class="form-group col-md-4">
+                <label for="alpn">ALPN</label>
+                <input class="form-control" id="alpn" name="alpn" value="{{ form_data.alpn }}">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label for="flow">Flow</label>
+                <input class="form-control" id="flow" name="flow" value="{{ form_data.flow }}">
+              </div>
+              <div class="form-group col-md-4">
+                <label for="alter_id">Alter ID</label>
+                <input class="form-control" id="alter_id" name="alter_id" type="number" min="0" value="{{ form_data.alter_id }}">
+              </div>
+              <div class="form-group col-md-4">
+                <label for="header_type">Header Type</label>
+                <input class="form-control" id="header_type" name="header_type" value="{{ form_data.header_type }}">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              Tao link va QR
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-5 col-lg-5">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Ket qua</h6>
+        </div>
+        <div class="card-body">
+          {% if result %}
+          <div class="text-center mb-3">
+            <img src="{{ result.qr_code_url }}" alt="Proxy QR Code" class="img-fluid border rounded p-2 bg-white">
+          </div>
+
+          <div class="mb-3">
+            <label class="font-weight-bold">Share Link</label>
+            <textarea class="form-control" rows="5" readonly>{{ result.share_link }}</textarea>
+          </div>
+
+          <div class="mb-0">
+            <label class="font-weight-bold">JSON Payload</label>
+            <textarea class="form-control" rows="14" readonly>{{ result.payload_json }}</textarea>
+          </div>
+          {% else %}
+          <p class="text-gray-600 mb-3">Nhap thong so ben trai de sinh QR va link import.</p>
+          <ul class="small text-gray-600 mb-0 pl-3">
+            <li>VMess duoc tao theo dang base64 JSON.</li>
+            <li>VLESS duoc tao theo URI query string.</li>
+            <li>QR hien qua QuickChart, phu thuoc internet de tai anh.</li>
+          </ul>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
