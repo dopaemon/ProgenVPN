@@ -6,24 +6,21 @@
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
       <h1 class="h3 mb-0 text-gray-800">Xray Personal Proxy</h1>
-      <p class="mb-0 text-gray-600">Tao link share chuan VMess hoac VLESS va QR de import nhanh vao client.</p>
+      <p class="mb-0 text-gray-600">Sinh nhieu node VPN, tao UUID, QR va share link ngay tren mot trang.</p>
     </div>
   </div>
 
-  {% if error %}
-  <div class="alert alert-danger" role="alert">
-    {{ error }}
-  </div>
-  {% endif %}
+  <div id="proxyAlert" class="alert d-none" role="alert"></div>
 
   <div class="row">
     <div class="col-xl-7 col-lg-7">
       <div class="card shadow mb-4">
-        <div class="card-header py-3">
-          <h6 class="m-0 font-weight-bold text-primary">Thong so ket noi</h6>
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+          <h6 class="m-0 font-weight-bold text-primary">Cau hinh chung</h6>
+          <button type="button" id="addNodeButton" class="btn btn-sm btn-outline-primary">Them node</button>
         </div>
         <div class="card-body">
-          <form method="post">
+          <form id="proxyForm">
             <div class="form-row">
               <div class="form-group col-md-4">
                 <label for="protocol">Protocol</label>
@@ -52,38 +49,20 @@
 
             <div class="form-row">
               <div class="form-group col-md-6">
-                <label for="remark">Remark</label>
-                <input class="form-control" id="remark" name="remark" value="{{ form_data.remark }}" required>
-              </div>
-              <div class="form-group col-md-6">
                 <label for="address">Server Address</label>
                 <input class="form-control" id="address" name="address" value="{{ form_data.address }}" required>
+              </div>
+              <div class="form-group col-md-6">
+                <label for="host">Host</label>
+                <input class="form-control" id="host" name="host" value="{{ form_data.host }}">
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group col-md-4">
-                <label for="port">Port</label>
-                <input class="form-control" id="port" name="port" type="number" min="1" max="65535" value="{{ form_data.port }}" required>
-              </div>
-              <div class="form-group col-md-8">
-                <label for="uuid">UUID</label>
-                <input class="form-control" id="uuid" name="uuid" value="{{ form_data.uuid }}" required>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="host">Host</label>
-                <input class="form-control" id="host" name="host" value="{{ form_data.host }}">
-              </div>
-              <div class="form-group col-md-6">
                 <label for="path">Path / Service Name</label>
                 <input class="form-control" id="path" name="path" value="{{ form_data.path }}">
               </div>
-            </div>
-
-            <div class="form-row">
               <div class="form-group col-md-4">
                 <label for="sni">SNI</label>
                 <input class="form-control" id="sni" name="sni" value="{{ form_data.sni }}">
@@ -92,20 +71,16 @@
                 <label for="fingerprint">Fingerprint</label>
                 <input class="form-control" id="fingerprint" name="fingerprint" value="{{ form_data.fingerprint }}">
               </div>
-              <div class="form-group col-md-4">
-                <label for="alpn">ALPN</label>
-                <input class="form-control" id="alpn" name="alpn" value="{{ form_data.alpn }}">
-              </div>
             </div>
 
             <div class="form-row">
               <div class="form-group col-md-4">
-                <label for="flow">Flow</label>
-                <input class="form-control" id="flow" name="flow" value="{{ form_data.flow }}">
+                <label for="alpn">ALPN</label>
+                <input class="form-control" id="alpn" name="alpn" value="{{ form_data.alpn }}">
               </div>
               <div class="form-group col-md-4">
-                <label for="alter_id">Alter ID</label>
-                <input class="form-control" id="alter_id" name="alter_id" type="number" min="0" value="{{ form_data.alter_id }}">
+                <label for="flow">Flow</label>
+                <input class="form-control" id="flow" name="flow" value="{{ form_data.flow }}">
               </div>
               <div class="form-group col-md-4">
                 <label for="header_type">Header Type</label>
@@ -113,8 +88,15 @@
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary">
-              Tao link va QR
+            <hr>
+            <div class="d-flex flex-row align-items-center justify-content-between mb-3">
+              <h6 class="m-0 font-weight-bold text-primary">Danh sach node</h6>
+              <button type="button" id="bulkUuidButton" class="btn btn-sm btn-outline-secondary">Tao UUID cho node rong</button>
+            </div>
+            <div id="nodeList"></div>
+
+            <button type="submit" id="buildButton" class="btn btn-primary mt-3">
+              Tao proxy
             </button>
           </form>
         </div>
@@ -126,32 +108,229 @@
         <div class="card-header py-3">
           <h6 class="m-0 font-weight-bold text-primary">Ket qua</h6>
         </div>
-        <div class="card-body">
-          {% if result %}
-          <div class="text-center mb-3">
-            <img src="{{ result.qr_code_url }}" alt="Proxy QR Code" class="img-fluid border rounded p-2 bg-white">
-          </div>
-
-          <div class="mb-3">
-            <label class="font-weight-bold">Share Link</label>
-            <textarea class="form-control" rows="5" readonly>{{ result.share_link }}</textarea>
-          </div>
-
-          <div class="mb-0">
-            <label class="font-weight-bold">JSON Payload</label>
-            <textarea class="form-control" rows="14" readonly>{{ result.payload_json }}</textarea>
-          </div>
-          {% else %}
-          <p class="text-gray-600 mb-3">Nhap thong so ben trai de sinh QR va link import.</p>
-          <ul class="small text-gray-600 mb-0 pl-3">
-            <li>VMess duoc tao theo dang base64 JSON.</li>
-            <li>VLESS duoc tao theo URI query string.</li>
-            <li>QR hien qua QuickChart, phu thuoc internet de tai anh.</li>
-          </ul>
-          {% endif %}
+        <div class="card-body" id="resultsPanel">
+          <p class="text-gray-600 mb-0">Nhan "Tao proxy" de sinh QR va link cho tung node.</p>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<template id="nodeTemplate">
+  <div class="card border-left-primary shadow-sm mb-3 node-item">
+    <div class="card-body">
+      <div class="d-flex flex-row align-items-center justify-content-between mb-3">
+        <h6 class="m-0 font-weight-bold text-gray-800 node-title">Node</h6>
+        <button type="button" class="btn btn-sm btn-outline-danger remove-node">Xoa</button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-5">
+          <label>Remark</label>
+          <input class="form-control node-remark" value="Node">
+        </div>
+        <div class="form-group col-md-3">
+          <label>Port</label>
+          <input type="number" min="1" max="65535" class="form-control node-port" value="443">
+        </div>
+        <div class="form-group col-md-4">
+          <label>Alter ID</label>
+          <input type="number" min="0" class="form-control node-alter-id" value="0">
+        </div>
+      </div>
+
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-9 mb-md-0">
+          <label>UUID</label>
+          <input class="form-control node-uuid" value="">
+        </div>
+        <div class="form-group col-md-3 mb-0">
+          <button type="button" class="btn btn-outline-primary btn-block generate-uuid">UUID</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block js %}
+{{ super() }}
+<script>
+  const defaultNodes = {{ form_data.nodes | tojson }};
+  const nodeList = document.getElementById('nodeList');
+  const nodeTemplate = document.getElementById('nodeTemplate');
+  const alertBox = document.getElementById('proxyAlert');
+  const resultsPanel = document.getElementById('resultsPanel');
+  const buildButton = document.getElementById('buildButton');
+
+  function showAlert(message, type) {
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = message;
+    alertBox.classList.remove('d-none');
+  }
+
+  function hideAlert() {
+    alertBox.classList.add('d-none');
+  }
+
+  async function fetchUuid() {
+    const response = await fetch('/api/proxy/uuid');
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Khong tao duoc UUID.');
+    }
+    return payload.uuid;
+  }
+
+  function updateNodeTitles() {
+    document.querySelectorAll('.node-item').forEach((item, index) => {
+      const title = item.querySelector('.node-title');
+      const remarkInput = item.querySelector('.node-remark');
+      title.textContent = `Node ${index + 1}`;
+      if (!remarkInput.value.trim() || /^Node \d+$/.test(remarkInput.value.trim())) {
+        remarkInput.value = `Node ${index + 1}`;
+      }
+    });
+  }
+
+  function createNodeCard(node = {}) {
+    const fragment = nodeTemplate.content.cloneNode(true);
+    const element = fragment.querySelector('.node-item');
+    element.querySelector('.node-remark').value = node.remark || '';
+    element.querySelector('.node-port').value = node.port || 443;
+    element.querySelector('.node-alter-id').value = node.alter_id ?? 0;
+    element.querySelector('.node-uuid').value = node.uuid || '';
+
+    element.querySelector('.remove-node').addEventListener('click', () => {
+      if (document.querySelectorAll('.node-item').length === 1) {
+        showAlert('Can giu it nhat mot node.', 'warning');
+        return;
+      }
+      element.remove();
+      updateNodeTitles();
+    });
+
+    element.querySelector('.generate-uuid').addEventListener('click', async () => {
+      const uuidInput = element.querySelector('.node-uuid');
+      try {
+        hideAlert();
+        uuidInput.value = 'Dang tao...';
+        uuidInput.value = await fetchUuid();
+      } catch (error) {
+        uuidInput.value = '';
+        showAlert(error.message, 'danger');
+      }
+    });
+
+    nodeList.appendChild(fragment);
+    updateNodeTitles();
+  }
+
+  function collectPayload() {
+    return {
+      protocol: document.getElementById('protocol').value,
+      address: document.getElementById('address').value.trim(),
+      network: document.getElementById('network').value,
+      security: document.getElementById('security').value,
+      host: document.getElementById('host').value.trim(),
+      path: document.getElementById('path').value.trim(),
+      sni: document.getElementById('sni').value.trim(),
+      fingerprint: document.getElementById('fingerprint').value.trim(),
+      alpn: document.getElementById('alpn').value.trim(),
+      flow: document.getElementById('flow').value.trim(),
+      header_type: document.getElementById('header_type').value.trim(),
+      nodes: Array.from(document.querySelectorAll('.node-item')).map((item) => ({
+        remark: item.querySelector('.node-remark').value.trim(),
+        port: item.querySelector('.node-port').value.trim(),
+        uuid: item.querySelector('.node-uuid').value.trim(),
+        alter_id: item.querySelector('.node-alter-id').value.trim(),
+      })),
+    };
+  }
+
+  function renderResults(payload) {
+    if (!payload.results || !payload.results.length) {
+      resultsPanel.innerHTML = '<p class="text-gray-600 mb-0">Khong co ket qua.</p>';
+      return;
+    }
+
+    resultsPanel.innerHTML = payload.results.map((item) => `
+      <div class="border rounded p-3 mb-3">
+        <div class="d-flex flex-row align-items-center justify-content-between mb-3">
+          <div>
+            <h6 class="font-weight-bold text-primary mb-1">${item.remark}</h6>
+            <div class="small text-gray-600">Port ${item.port}</div>
+          </div>
+          <img src="${item.qr_code_data_uri}" alt="QR ${item.remark}" class="border rounded bg-white p-2" style="width: 120px; height: 120px; object-fit: contain;">
+        </div>
+        <div class="form-group">
+          <label class="font-weight-bold">UUID</label>
+          <input class="form-control" readonly value="${item.uuid}">
+        </div>
+        <div class="form-group">
+          <label class="font-weight-bold">Share Link</label>
+          <textarea class="form-control" rows="4" readonly>${item.share_link}</textarea>
+        </div>
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">JSON Payload</label>
+          <textarea class="form-control" rows="12" readonly>${item.payload_json}</textarea>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('addNodeButton').addEventListener('click', async () => {
+    createNodeCard({ port: 443, alter_id: 0 });
+  });
+
+  document.getElementById('bulkUuidButton').addEventListener('click', async () => {
+    const emptyUuidInputs = Array.from(document.querySelectorAll('.node-uuid')).filter((input) => !input.value.trim());
+    if (!emptyUuidInputs.length) {
+      showAlert('Tat ca node da co UUID.', 'info');
+      return;
+    }
+
+    hideAlert();
+    for (const input of emptyUuidInputs) {
+      try {
+        input.value = 'Dang tao...';
+        input.value = await fetchUuid();
+      } catch (error) {
+        input.value = '';
+        showAlert(error.message, 'danger');
+        break;
+      }
+    }
+  });
+
+  document.getElementById('proxyForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    hideAlert();
+    buildButton.disabled = true;
+    buildButton.textContent = 'Dang tao...';
+
+    try {
+      const response = await fetch('/api/proxy/build', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(collectPayload()),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || 'Khong tao duoc proxy.');
+      }
+      renderResults(payload);
+      showAlert(`Da tao ${payload.node_count} node ${payload.protocol.toUpperCase()}.`, 'success');
+    } catch (error) {
+      showAlert(error.message, 'danger');
+    } finally {
+      buildButton.disabled = false;
+      buildButton.textContent = 'Tao proxy';
+    }
+  });
+
+  defaultNodes.forEach((node) => createNodeCard(node));
+</script>
 {% endblock %}
